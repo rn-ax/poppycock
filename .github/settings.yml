@@ -8,3 +8,13 @@ repository:
   has_projects: false
   has_wiki: false
   has_downloads: false
+
+branches:
+  - name: main
+    protection:
+      required_pull_request_reviews:
+        required_approving_review_count: 0
+      required_status_checks: null
+      enforce_admins: false
+      required_linear_history: false
+      restrictions: null
