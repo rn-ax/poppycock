@@ -9,6 +9,13 @@ repository:
   has_wiki: false
   has_downloads: false
 
+# NOTE: these branch protection rules currently have no effect. Private repos
+# in the rn-ax org (GitHub Free plan) can't use branch protection until the
+# org upgrades to GitHub Team or the repo is made public. Confirmed via
+# `gh api repos/<org>/<repo>/branches/main/protection`, which 403s with
+# "Upgrade to GitHub Pro or make this repository public to enable this
+# feature." Left in place so protection applies automatically if either
+# condition changes.
 branches:
   - name: main
     protection:
