@@ -9,12 +9,9 @@ repository:
   has_wiki: false
   has_downloads: false
 
-branches:
-  - name: main
-    protection:
-      required_pull_request_reviews:
-        required_approving_review_count: 0
-      required_status_checks: null
-      enforce_admins: false
-      required_linear_history: false
-      restrictions: null
+# No `branches` protection block here on purpose: private repos in the rn-ax
+# org (GitHub Free plan) can't use branch protection until the org upgrades
+# to GitHub Team or the repo is made public. Confirmed via
+# `gh api repos/<org>/<repo>/branches/main/protection`, which 403s with
+# "Upgrade to GitHub Pro or make this repository public to enable this
+# feature." Add it back once either condition changes.
