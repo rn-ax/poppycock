@@ -16,6 +16,22 @@
     {
       "matchManagers": ["mise"],
       "groupName": "mise tool versions"
+    },
+    {
+      "matchManagers": ["custom.regex"],
+      "matchDepNames": ["oven-sh/bun"],
+      "groupName": "mise tool versions"
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Keep package.json's packageManager field (bun@x.y.z) in sync with the pinned bun version, since Renovate's core bun manager doesn't update this field (renovatebot/renovate#25704)",
+      "managerFilePatterns": ["/^package\\.json$/"],
+      "matchStrings": ["\"packageManager\":\\s*\"bun@(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "oven-sh/bun",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^bun-v(?<version>.*)$"
     }
   ]
 }
