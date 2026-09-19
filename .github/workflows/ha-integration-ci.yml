@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: home-assistant/actions/hassfest@master
+      - uses: home-assistant/actions/hassfest@58bff37c8947f690ace498be413a9b78d6f30f93 # master
 
   hacs:
     runs-on: ubuntu-latest
@@ -53,7 +53,7 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: hacs/action@main
+      - uses: hacs/action@d556e736723344f83838d08488c983a15381059a # 22.5.0
         with:
           category: ${{ inputs.hacs_category }}
           comment: true
@@ -67,6 +67,13 @@ jobs:
 
       - run: pip install -q websockets
 
+      # Inlined rather than checked out from scripts/hacs_deploy.py in this
+      # repo: this job runs in the *calling* repo's context (e.g.
+      # ha-gym-tracker), whose GITHUB_TOKEN has no read access to poppycock
+      # since poppycock is private -- a real `actions/checkout` of poppycock
+      # itself would fail here. scripts/hacs_deploy.py still exists for
+      # local dev/testing (mise.toml pins the Python version for it) -- keep
+      # the two in sync by hand when either changes.
       - name: Tell HACS to sync this repo to the latest commit
         env:
           HOME_ASSISTANT_URL: ${{ secrets.HOME_ASSISTANT_URL }}
@@ -75,16 +82,6 @@ jobs:
           CATEGORY: ${{ inputs.hacs_category }}
         shell: python3 {0}
         run: |
-          # Assumes this repo is already registered as a HACS custom
-          # repository (a one-time manual setup step, not done here) --
-          # this only re-syncs an already-tracked repo to its latest
-          # commit. Uses HACS's own websocket commands rather than the
-          # REST-callable update.install service: HACS's install step
-          # installs whatever version it last cached as available, not
-          # necessarily a fresh check, so hacs/repositories/list is called
-          # first to force that check before hacs/repository/download.
-          # Deliberately does not restart Home Assistant afterward -- the
-          # new code won't be loaded until that happens, done manually.
           import asyncio
           import json
           import os
