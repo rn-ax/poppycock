@@ -2,6 +2,15 @@
 
 Shared config other `rn-ax` repos build on instead of repeating themselves — see `README.md` for what's actually here (the Renovate preset, the Settings app base config, the reusable HA integration CI workflow).
 
+## This repo is public
+
+Nothing here should ever reveal a secret, a private hostname/IP, or anything identifying beyond the `rn-ax` org itself. Concretely, before committing or opening a PR:
+
+- No API keys, tokens, or credentials of any kind — the `deploy` job in `ha-integration-ci.yml` reaches a real Home Assistant instance via secrets that stay in each *calling* repo (`HOME_ASSISTANT_URL`/`HOME_ASSISTANT_TOKEN`, passed through with `secrets: inherit`), never hardcoded or logged here.
+- No real private-network hostnames or IPs (e.g. a `.lan` address, a home router's admin IP) in code, comments, or workflow logs.
+- No personal GitHub handles where the org handle (`@rn-ax`) already satisfies whatever needs a `codeowners`-style field.
+- Commit history counts too, not just current file content — something committed and later removed is still public once pushed. If anything sensitive ever lands here, it needs history rewritten (`git filter-repo` + force-push) and coordinating with whoever owns this repo, not just a follow-up commit that deletes it.
+
 ## Pinning GitHub Actions
 
 Every `uses:` reference in any workflow in this repo (and in any repo that consumes this one's shared workflow) is pinned to a full commit SHA with a trailing `# <tag-or-branch>` comment, e.g. `actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4` — never a mutable ref like `@main`, `@master`, or a bare `@v4` tag, since any of those can be force-moved to point at different (and unreviewed) code after the fact.
