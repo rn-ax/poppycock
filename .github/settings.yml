@@ -1,5 +1,5 @@
 repository:
-  private: true
+  private: false
   allow_squash_merge: true
   allow_merge_commit: false
   allow_rebase_merge: false
@@ -9,9 +9,11 @@ repository:
   has_wiki: false
   has_downloads: false
 
-# No `branches` protection block here on purpose: private repos in the rn-ax
-# org (GitHub Free plan) can't use branch protection until the org upgrades
-# to GitHub Team or the repo is made public. Confirmed via
-# `gh api repos/<org>/<repo>/branches/main/protection`, which 403s with
-# "Upgrade to GitHub Pro or make this repository public to enable this
-# feature." Add it back once either condition changes.
+# No `branches` protection block here (yet): it was dropped while this repo
+# was private, since private repos in the rn-ax org (GitHub Free plan)
+# can't use branch protection at all -- `gh api
+# repos/<org>/<repo>/branches/main/protection` 403s with "Upgrade to GitHub
+# Pro or make this repository public to enable this feature." Now that the
+# repo is public, that limitation no longer applies -- add a `branches:`
+# block back (see PR #2's original version) as a follow-up if branch
+# protection on `main` is wanted.
