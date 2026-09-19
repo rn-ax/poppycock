@@ -1,0 +1,144 @@
+name: HA integration CI
+
+# Shared CI for rn-ax Home Assistant custom-integration repos: hassfest +
+# HACS validation, then (on push to main, once both pass) tells the user's
+# running HACS instance to sync the calling repo to the latest commit.
+#
+# Callers just need:
+#
+#   jobs:
+#     ci:
+#       permissions:
+#         contents: read
+#         pull-requests: write
+#       uses: rn-ax/poppycock/.github/workflows/ha-integration-ci.yml@main
+#       secrets: inherit
+#
+# `secrets: inherit` passes the calling repo's HOME_ASSISTANT_URL /
+# HOME_ASSISTANT_TOKEN repo secrets through automatically -- no need to list
+# them individually. The calling job's `permissions` block matters: GitHub
+# intersects it with what this workflow declares per-job, and hacs/action's
+# PR comment needs pull-requests: write to actually get granted.
+#
+# No repo-identity input is needed: inside a called reusable workflow,
+# `github.repository` still resolves to the *caller's* repo (verified against
+# GitHub's reusable-workflows docs, Sept 2026), so FULL_NAME below is always
+# correct for whichever repo invoked this workflow.
+
+on:
+  workflow_call:
+    inputs:
+      hacs_category:
+        description: HACS category for this integration (e.g. integration, plugin).
+        type: string
+        default: integration
+    secrets:
+      HOME_ASSISTANT_URL:
+        required: false
+      HOME_ASSISTANT_TOKEN:
+        required: false
+
+jobs:
+  hassfest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: home-assistant/actions/hassfest@58bff37c8947f690ace498be413a9b78d6f30f93 # master
+
+  hacs:
+    runs-on: ubuntu-latest
+    # pull-requests:write lets hacs/action post its results as a PR comment.
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: hacs/action@d556e736723344f83838d08488c983a15381059a # 22.5.0
+        with:
+          category: ${{ inputs.hacs_category }}
+          comment: true
+
+  deploy:
+    needs: [hassfest, hacs]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - run: pip install -q websockets
+
+      # Inlined rather than checked out from scripts/hacs_deploy.py in this
+      # repo: this job runs in the *calling* repo's context (e.g.
+      # ha-gym-tracker), whose GITHUB_TOKEN has no read access to poppycock
+      # since poppycock is private -- a real `actions/checkout` of poppycock
+      # itself would fail here. scripts/hacs_deploy.py still exists for
+      # local dev/testing (mise.toml pins the Python version for it) -- keep
+      # the two in sync by hand when either changes.
+      - name: Tell HACS to sync this repo to the latest commit
+        env:
+          HOME_ASSISTANT_URL: ${{ secrets.HOME_ASSISTANT_URL }}
+          HOME_ASSISTANT_TOKEN: ${{ secrets.HOME_ASSISTANT_TOKEN }}
+          FULL_NAME: ${{ github.repository }}
+          CATEGORY: ${{ inputs.hacs_category }}
+        shell: python3 {0}
+        run: |
+          import asyncio
+          import json
+          import os
+          import sys
+
+          import websockets
+
+          FULL_NAME = os.environ["FULL_NAME"]
+          CATEGORY = os.environ.get("CATEGORY") or "integration"
+
+
+          async def send(ws, msg_id, payload):
+              payload["id"] = msg_id
+              await ws.send(json.dumps(payload))
+              while True:
+                  raw = await asyncio.wait_for(ws.recv(), timeout=30)
+                  data = json.loads(raw)
+                  if data.get("id") == msg_id:
+                      return data
+
+
+          async def main():
+              token = os.environ["HOME_ASSISTANT_TOKEN"]
+              base_url = os.environ["HOME_ASSISTANT_URL"]
+              ws_scheme = "wss" if base_url.startswith("https") else "ws"
+              host_part = base_url.split("://", 1)[1]
+              uri = f"{ws_scheme}://{host_part}/api/websocket"
+
+              async with websockets.connect(uri, max_size=50 * 1024 * 1024) as ws:
+                  await ws.recv()  # auth_required
+                  await ws.send(json.dumps({"type": "auth", "access_token": token}))
+                  auth_result = json.loads(await ws.recv())
+                  if auth_result.get("type") != "auth_ok":
+                      print("auth failed", file=sys.stderr)
+                      raise SystemExit(1)
+
+                  msg_id = 1
+                  list_result = await send(ws, msg_id, {
+                      "type": "hacs/repositories/list",
+                      "categories": [CATEGORY],
+                  })
+                  msg_id += 1
+                  repos = list_result.get("result", [])
+                  match = [r for r in repos if r.get("full_name", "").lower() == FULL_NAME.lower()]
+                  if not match:
+                      print(f"'{FULL_NAME}' is not registered as a HACS custom repository -- add it manually first.", file=sys.stderr)
+                      raise SystemExit(1)
+
+                  repo_id = match[0]["id"]
+                  download_result = await send(ws, msg_id, {
+                      "type": "hacs/repository/download",
+                      "repository": repo_id,
+                  })
+                  if not download_result.get("success"):
+                      print("download failed:", json.dumps(download_result), file=sys.stderr)
+                      raise SystemExit(1)
+                  print(f"Updated {FULL_NAME} to latest main. Restart Home Assistant to load it.")
+
+
+          asyncio.run(main())
