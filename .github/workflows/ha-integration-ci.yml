@@ -14,9 +14,11 @@ name: HA integration CI
 #       uses: rn-ax/poppycock/.github/workflows/ha-integration-ci.yml@main
 #       secrets: inherit
 #
-# `secrets: inherit` passes the calling repo's HOME_ASSISTANT_URL /
-# HOME_ASSISTANT_TOKEN repo secrets through automatically -- no need to list
-# them individually. The calling job's `permissions` block matters: GitHub
+# `secrets: inherit` passes through HOME_ASSISTANT_URL / HOME_ASSISTANT_TOKEN
+# automatically -- these live as org-level secrets on rn-ax (scoped to the
+# repos that need them), not duplicated per repo, so a new caller only needs
+# adding to that org secret's repo list, not a fresh secret of its own. The
+# calling job's `permissions` block matters: GitHub
 # intersects it with what this workflow declares per-job, and hacs/action's
 # PR comment needs pull-requests: write to actually get granted.
 #

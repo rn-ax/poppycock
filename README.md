@@ -36,4 +36,4 @@ jobs:
     secrets: inherit
 ```
 
-`secrets: inherit` passes the calling repo's `HOME_ASSISTANT_URL` / `HOME_ASSISTANT_TOKEN` repo secrets through automatically. The calling job's `permissions` block is required too -- GitHub intersects it with what the reusable workflow declares per-job, and without `pull-requests: write` here HACS's PR comment won't actually get posted. Pass `hacs_category: plugin` (or similar) as an `inputs:` override for a repo whose HACS category isn't `integration`.
+`secrets: inherit` passes through `HOME_ASSISTANT_URL` / `HOME_ASSISTANT_TOKEN` automatically -- these live as org-level secrets on `rn-ax` (scoped to the repos that need them via `--repos`), not duplicated per repo. The calling job's `permissions` block is required too -- GitHub intersects it with what the reusable workflow declares per-job, and without `pull-requests: write` here HACS's PR comment won't actually get posted. Pass `hacs_category: plugin` (or similar) as an `inputs:` override for a repo whose HACS category isn't `integration`.
