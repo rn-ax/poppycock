@@ -32,6 +32,12 @@ on:
         description: HACS category for this integration (e.g. integration, plugin).
         type: string
         default: integration
+      hacs_ignore:
+        description: >-
+          Space-separated hacs/action checks to skip (e.g. "brands" for a
+          new integration with no entry yet in home-assistant/brands).
+        type: string
+        default: ""
     secrets:
       HOME_ASSISTANT_URL:
         required: false
@@ -57,6 +63,7 @@ jobs:
         with:
           category: ${{ inputs.hacs_category }}
           comment: true
+          ignore: ${{ inputs.hacs_ignore }}
 
   deploy:
     needs: [hassfest, hacs]
