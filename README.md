@@ -4,7 +4,11 @@ Shared config other `rn-ax` repos build on instead of repeating themselves.
 
 ## Settings app
 
-`.github/settings.yml` is the shared base config for the [Settings app](https://github.com/repository-settings/app). Other repos point their own `.github/settings.yml` at this one with `_extends: poppycock` to inherit common repository defaults.
+`settings.yml` (repo root) is the shared base config for the [Settings app](https://github.com/repository-settings/app). Other repos point their own `.github/settings.yml` at this one with `_extends: poppycock` to inherit common repository defaults. `.github/settings.yml` here is poppycock's own repo-specific override (it needs `private: false` since the base template defaults every repo to private).
+
+## EditorConfig
+
+`.editorconfig` is a plain reference copy, not something other repos can remotely extend -- [EditorConfig](https://editorconfig.org/) has no include/inherit mechanism, so a new repo copies this file directly rather than pointing at it. Every `rn-ax` repo has one.
 
 ## Renovate preset
 
