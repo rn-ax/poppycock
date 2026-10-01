@@ -8,3 +8,7 @@ repository:
   has_projects: false
   has_wiki: false
   has_downloads: false
+
+teams:
+  - name: all-stars
+    permission: push
