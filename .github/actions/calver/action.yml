@@ -1,0 +1,14 @@
+name: CalVer version
+description: Computes the org's CalVer release version, YYYY.MM.DD.<run number>, from the current UTC date and the workflow run number.
+
+outputs:
+  version:
+    description: The computed version, for example 2026.11.01.7.
+    value: ${{ steps.calver.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    - id: calver
+      shell: bash
+      run: echo "version=$(date -u +%Y.%m.%d).${{ github.run_number }}" >> "$GITHUB_OUTPUT"
