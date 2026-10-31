@@ -41,3 +41,14 @@ jobs:
 ```
 
 `secrets: inherit` passes through `HOME_ASSISTANT_URL` / `HOME_ASSISTANT_TOKEN` automatically -- these live as org-level secrets on `rn-ax` (scoped to the repos that need them via `--repos`), not duplicated per repo. The calling job's `permissions` block is required too -- GitHub intersects it with what the reusable workflow declares per-job, and without `pull-requests: write` here HACS's PR comment won't actually get posted. Pass `hacs_category: plugin` (or similar) as an `inputs:` override for a repo whose HACS category isn't `integration`.
+
+## CalVer action
+
+`.github/actions/calver/action.yml` is a composite action that computes the org's release version, `YYYY.MM.DD.<run number>`, from the current UTC date and the workflow run number. Callers use it as a step and read its `version` output:
+
+```yaml
+- id: version
+  uses: rn-ax/poppycock/.github/actions/calver@main
+
+- run: echo "building ${{ steps.version.outputs.version }}"
+```
