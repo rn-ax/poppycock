@@ -1,0 +1,36 @@
+name: Merge pull request
+description: Squash-merges the open pull request of the current branch, closes the issues it names, and starts the workflow on the default branch, because a merge made with GITHUB_TOKEN starts no workflows except workflow_dispatch.
+
+inputs:
+  workflow:
+    description: File name of the workflow to start on the default branch.
+    default: ci.yml
+  branch:
+    description: The default branch.
+    default: main
+  token:
+    description: Token that merges. The calling job needs contents, pull-requests, issues and actions write permissions.
+    default: ${{ github.token }}
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        GH_REPO: ${{ github.repository }}
+        WORKFLOW: ${{ inputs.workflow }}
+        DEFAULT_BRANCH: ${{ inputs.branch }}
+      run: |
+        pr=$(gh pr list --head "$GITHUB_REF_NAME" --base "$DEFAULT_BRANCH" --json number --jq '.[0].number // empty')
+        if [ -z "$pr" ]; then
+          echo "No open pull request for $GITHUB_REF_NAME, nothing to merge."
+          exit 0
+        fi
+        # A merge made with GITHUB_TOKEN does not close the issues the pull request names.
+        issues=$(gh pr view "$pr" --json closingIssuesReferences --jq '.closingIssuesReferences[].number')
+        gh pr merge "$pr" --squash
+        for issue in $issues; do
+          gh issue close "$issue" --comment "Merged in #$pr."
+        done
+        gh workflow run "$WORKFLOW" --ref "$DEFAULT_BRANCH"

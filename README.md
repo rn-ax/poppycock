@@ -52,3 +52,28 @@ jobs:
 
 - run: echo "building ${{ steps.version.outputs.version }}"
 ```
+
+## Delivery actions
+
+`.github/actions/merge-pr` squash-merges the open pull request of the branch a workflow is running on, closes the issues the pull request names, and starts the workflow on the default branch. A merge made with `GITHUB_TOKEN` starts no workflows except `workflow_dispatch`, so the follow-up run is started explicitly. The calling job needs `contents`, `pull-requests`, `issues` and `actions` write permissions.
+
+`.github/actions/is-latest-main` outputs `current`, whether the commit being built is still the head of the default branch. A deploy step runs only when it is, because runs on the default branch do not wait for each other and an older commit's run could otherwise deploy over a newer one.
+
+```yaml
+merge:
+  needs: build
+  if: github.ref != 'refs/heads/main'
+  permissions: { contents: write, pull-requests: write, issues: write, actions: write }
+  steps:
+    - uses: rn-ax/poppycock/.github/actions/merge-pr@main
+
+deploy:
+  needs: build
+  if: github.ref == 'refs/heads/main'
+  steps:
+    - uses: actions/checkout@<sha> # <tag>
+    - id: latest
+      uses: rn-ax/poppycock/.github/actions/is-latest-main@main
+    - if: steps.latest.outputs.current == 'true'
+      run: ./deploy
+```

@@ -1,0 +1,23 @@
+name: Is latest main
+description: Outputs whether the commit being built is still the head of the default branch. Runs on the default branch do not wait for each other, so an older commit's run can reach its deploy after a newer one has merged, and deploying the older image on top would roll the newer one back.
+
+inputs:
+  branch:
+    description: The default branch.
+    default: main
+
+outputs:
+  current:
+    description: "true when the commit being built is the head of the default branch."
+    value: ${{ steps.check.outputs.current }}
+
+runs:
+  using: composite
+  steps:
+    - id: check
+      shell: bash
+      env:
+        DEFAULT_BRANCH: ${{ inputs.branch }}
+      run: |
+        head=$(git ls-remote origin "refs/heads/$DEFAULT_BRANCH" | cut -f1)
+        echo "current=$([ "$head" = "$GITHUB_SHA" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
